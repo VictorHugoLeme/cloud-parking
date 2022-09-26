@@ -1,5 +1,6 @@
 package dev.victorhleme.parking.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -19,7 +20,9 @@ public class ParkingDto {
     private String state;
     private String model;
     private String color;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy / HH:mm")
     private LocalDateTime entryDate;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy / HH:mm")
     private LocalDateTime exitDate;
     private Double bill;
 }
