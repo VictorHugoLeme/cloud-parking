@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,19 +20,21 @@ import static java.util.UUID.randomUUID;
 public class ParkingService {
 
     ModelMapper modelMapper = new ModelMapper();
-
-    private static final List<Parking> parkingMap = new ArrayList<>();
+    private static final HashMap<String, Parking> parkingMap = new HashMap<>();
 
     static {
-        parkingMap.add(new Parking()
-            .withId(randomUUID().toString())
+        String id = randomUUID().toString();
+        parkingMap.put(id, new Parking()
+            .withId(id)
             .withColor("white")
             .withLicense("ABC-1234")
             .withModel("Ford Ka")
             .withState("SP")
             .withEntryDate(LocalDateTime.now()));
-        parkingMap.add(new Parking()
-            .withId(randomUUID().toString())
+
+        id = randomUUID().toString();
+        parkingMap.put(id, new Parking()
+            .withId(id)
             .withColor("red")
             .withLicense("ABC-1234")
             .withModel("Fiat Argo")
@@ -39,24 +43,41 @@ public class ParkingService {
     }
 
     public List<ParkingDto> findAll() {
-        return parkingMap.stream().map(this::convertToDto).collect(Collectors.toList());
+
+        return Arrays.asList(modelMapper.map(parkingMap.values().toArray(), ParkingDto[].class));
     }
 
     public ParkingDto findById(String id) {
-        return parkingMap
-            .stream()
-            .filter(parking -> parking.getId().equals(id))
-            .findFirst()
-            .map(this::convertToDto)
-            .orElseThrow(() -> new DataNotFoundException("Parking not found"));
+        Parking parking = parkingMap.get(id);
+        if (parking == null) {
+            throw new DataNotFoundException("Parking", id);
+        }
+        return modelMapper.map(parking, ParkingDto.class);
     }
 
     public ParkingDto create(ParkingCreationDto parkingDto) {
+        String id = randomUUID().toString();
         Parking parking = convertToEntity(parkingDto)
-            .withId(randomUUID().toString())
+            .withId(id)
             .withEntryDate(LocalDateTime.now());
-        parkingMap.add(parking);
+        parkingMap.put(id, parking);
         return convertToDto(parking);
+    }
+
+    public ParkingDto update(String id, ParkingCreationDto parkingDto) {
+        Parking parking = parkingMap.get(id);
+        if (parking == null) {
+            throw new DataNotFoundException("Parking", id);
+        }
+        parkingMap.put(id, updateEntity(parking, parkingDto));
+        return convertToDto(parkingMap.get(id));
+    }
+
+    public void delete(String id) {
+        if (parkingMap.get(id) == null) {
+            throw new DataNotFoundException("Parking", id);
+        }
+        parkingMap.remove(id);
     }
 
     private ParkingDto convertToDto(Parking parking) {
@@ -65,5 +86,13 @@ public class ParkingService {
 
     private Parking convertToEntity(ParkingCreationDto parkingDto) {
         return modelMapper.map(parkingDto, Parking.class);
+    }
+
+    private Parking updateEntity(Parking parking, ParkingCreationDto parkingDto) {
+        return parking
+            .withColor(parkingDto.getColor())
+            .withLicense(parkingDto.getLicense())
+            .withModel(parkingDto.getModel())
+            .withState(parkingDto.getState());
     }
 }

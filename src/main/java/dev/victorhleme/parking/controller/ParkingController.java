@@ -7,6 +7,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,11 +34,7 @@ public class ParkingController {
     @ApiOperation(value = "Find parking by id")
     @GetMapping("/{id}")
     public ResponseEntity<ParkingDto> findById(@PathVariable String id) {
-        try {
             return ResponseEntity.ok(parkingService.findById(id));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
-        }
     }
 
     @ApiOperation(value = "Create parking")
@@ -45,4 +42,18 @@ public class ParkingController {
     public ResponseEntity<ParkingDto> create(@RequestBody ParkingCreationDto newParking) {
         return new ResponseEntity<>(parkingService.create(newParking), HttpStatus.CREATED);
     }
+
+    @ApiOperation(value = "Update parking")
+    @PutMapping("/{id}")
+    public ResponseEntity<ParkingDto> update(@PathVariable String id, @RequestBody ParkingCreationDto newParking) {
+        return ResponseEntity.ok(parkingService.update(id, newParking));
+    }
+
+    @ApiOperation(value = "Delete parking by id")
+    @DeleteMapping("/{id}")
+    public ResponseEntity deleteById(@PathVariable String id) {
+        parkingService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }
