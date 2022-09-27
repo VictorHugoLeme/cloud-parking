@@ -7,11 +7,11 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "api/v1/parking")
@@ -33,7 +33,7 @@ public class ParkingController {
 
     @ApiOperation(value = "Find parking by id")
     @GetMapping("/{id}")
-    public ResponseEntity<ParkingDto> findById(@PathVariable String id) {
+    public ResponseEntity<ParkingDto> findById(@PathVariable UUID id) {
             return ResponseEntity.ok(parkingService.findById(id));
     }
 
@@ -45,15 +45,21 @@ public class ParkingController {
 
     @ApiOperation(value = "Update parking")
     @PutMapping("/{id}")
-    public ResponseEntity<ParkingDto> update(@PathVariable String id, @RequestBody ParkingCreationDto newParking) {
+    public ResponseEntity<ParkingDto> update(@PathVariable UUID id, @RequestBody ParkingCreationDto newParking) {
         return ResponseEntity.ok(parkingService.update(id, newParking));
     }
 
     @ApiOperation(value = "Delete parking by id")
     @DeleteMapping("/{id}")
-    public ResponseEntity deleteById(@PathVariable String id) {
+    public ResponseEntity deleteById(@PathVariable UUID id) {
         parkingService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @ApiOperation(value = "Exit the parking lot")
+    @PostMapping("/{id}/exit")
+    public ResponseEntity<ParkingDto> exit(@PathVariable UUID id) {
+        return ResponseEntity.ok(parkingService.exit(id));
     }
 
 }
