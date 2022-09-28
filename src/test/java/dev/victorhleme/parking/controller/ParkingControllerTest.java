@@ -1,20 +1,24 @@
 package dev.victorhleme.parking.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import dev.victorhleme.parking.repository.ParkingRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import testUtils.IntegrationTest;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import static dev.victorhleme.parking.utils.DataGenerator.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
@@ -24,83 +28,145 @@ class ParkingControllerTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
+    @Autowired
+    private ParkingRepository parkingRepository;
+
     private MockMvc mockMvc;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private final String baseUrl = "/api/v1/parking/";
-
-
-//    @LocalServerPort
-//    private int port;
 
     @BeforeEach
     void setUp() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(this.webApplicationContext).build();
+        parkingRepository.deleteAll();
     }
 
     @Test
     void shouldSuccessWhenFindingAllParking() throws Exception {
-        MvcResult result = mockMvc.perform(get(baseUrl)
-                .contentType("application/json"))
-            .andExpect(status().isOk()).andReturn();
-        String content = result.getResponse().getContentAsString();
-        Assertions.assertNotNull(content);
+        RequestBuilder request = buildGetRequest("/api/v1/parking/");
+        MvcResult result = this.mockMvc.perform(request).andExpect(status().isOk()).andReturn();
+        assertThat(result).isNotNull();
+        assertThat(result.getResponse().getContentAsString()).isEqualTo("[]");
     }
 
     @Test
-    void findByIdTestSuccess() throws Exception {
-        MvcResult result = mockMvc.perform(
-                get("/jobs/{id}", 1)
-                    .contentType("application/json"))
-            .andExpect(status().isOk()).andReturn();
+    void shouldSuccessWhenFindingByValidId() throws Exception {
+        UUID id = UUID.randomUUID();
+        parkingRepository.save(buildParking(id));
+
+        RequestBuilder request = buildGetRequest("/api/v1/parking/" + id);
+        MvcResult result = mockMvc.perform(request)
+            .andExpect(
+                status().isOk()).andReturn();
         String content = result.getResponse().getContentAsString();
-        Assertions.assertNotNull(content);
+
+        assertNotNull(content);
+        assertTrue(content.contains(id.toString()));
     }
 
-//    @Test
-//    void findByIdTestFail() throws Exception {
-//        MvcResult result = mockMvc.perform(get("/jobs/{id}", 32)
-//                .contentType("application/json"))
-//            .andExpect(status().isNotFound()).andReturn();
-//        int status = result.getResponse().getStatus();
-//        Assertions.assertEquals(404, status);
-//    }
-//
-//    @Test
-//    void insertTestSuccess() throws Exception {
-//        JobDTO insertedJob = new JobDTO(null, "Test insert title", "Test insert desc", 10.0, 20.0);
-//        MvcResult result = mockMvc.perform(post("/jobs")
-//                .contentType("application/json")
-//                .content(objectMapper.writeValueAsString(insertedJob)))
-//            .andExpect(status().isOk()).andReturn();
-//        String content = result.getResponse().getContentAsString();
-//        String expectedResponse = "{\"id\":31,\"title\":\"Test insert title\",\"description\":\"Test insert desc\",\"minSalary\":10.0,\"maxSalary\":20.0}";
-//
-//        Assertions.assertNotNull(content);
-//        Assertions.assertEquals(expectedResponse, content);
-//    }
-//
-//    @Test
-//    void insertTestFail() throws Exception {
-//
-//        JobDTO invalidJobTitle = new JobDTO(null, "", "Test", 10.0, 20.0);
-//        JobDTO invalidJobDescription = new JobDTO(null, "Test", "", 10.0, 20.0);
-//        MvcResult result = mockMvc.perform(post("/jobs")
-//                .contentType("application/json")
-//                .content(objectMapper.writeValueAsString(invalidJobTitle)))
-//            .andExpect(status().is4xxClientError()).andReturn();
-//        int status = result.getResponse().getStatus();
-//        Assertions.assertEquals(400, status);
-//
-//        result = mockMvc.perform(post("/jobs")
-//                .contentType("application/json")
-//                .content(objectMapper.writeValueAsString(invalidJobDescription)))
-//            .andExpect(status().is4xxClientError()).andReturn();
-//        status = result.getResponse().getStatus();
-//        Assertions.assertEquals(400, status);
-//    }
+    @Test
+    void shouldFailWhenFindingByInvalidId() throws Exception {
+        UUID id = UUID.randomUUID();
+        parkingRepository.save(buildParking(UUID.randomUUID()));
 
+        RequestBuilder request = buildGetRequest("/api/v1/parking/" + id);
+        MvcResult result = mockMvc.perform(request).andExpect(status().is4xxClientError()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        assertNotNull(content);
+    }
 
+    @Test
+    void shouldSuccessWhenDeletingByValidId() throws Exception {
+        UUID id = UUID.randomUUID();
+        parkingRepository.save(buildParking(id));
+
+        RequestBuilder request = buildDeleteRequest("/api/v1/parking/" + id);
+        mockMvc.perform(request)
+            .andExpect(
+                status().isNoContent());
+        assertThat(parkingRepository.findById(id)).isEmpty();
+    }
+
+    @Test
+    void shouldFailWhenDeletingByInvalidId() throws Exception {
+        UUID id = UUID.randomUUID();
+        parkingRepository.save(buildParking(id));
+
+        RequestBuilder request = buildDeleteRequest("/api/v1/parking/" + UUID.randomUUID());
+        mockMvc.perform(request)
+            .andExpect(
+                status().is4xxClientError());
+        assertThat(parkingRepository.findById(id)).isPresent();
+    }
+
+    @Test
+    void shouldSuccessWhenCreatingNewParking() throws Exception {
+        RequestBuilder request = buildPostRequestWithObject("/api/v1/parking/", buildParkingCreationDto());
+
+        MvcResult result = mockMvc.perform(request)
+            .andExpect(
+                status().isCreated()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        assertNotNull(content);
+        assertThat(parkingRepository.findAll()).hasSize(1);
+        assertTrue(content.contains("entryDate"));
+    }
+
+    @Test
+    void shouldSuccessWhenUpdatingParking() throws Exception {
+        UUID id = parkingRepository.save(buildParking(UUID.randomUUID())).getId();
+        RequestBuilder request = buildPutRequestWithObject("/api/v1/parking/" + id, buildParkingCreationDto().withColor("Red"));
+
+        MvcResult result = mockMvc.perform(request)
+            .andExpect(
+                status().isOk()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        assertNotNull(content);
+        assertThat(parkingRepository.findAll()).hasSize(1);
+        assertTrue(content.contains("Red"));
+    }
+
+    @Test
+    void shouldFailWhenUpdatingParkingWithInvalidId() throws Exception {
+        RequestBuilder request = buildPutRequestWithObject("/api/v1/parking/" + UUID.randomUUID(), buildParkingCreationDto().withColor("Red"));
+
+        MvcResult result = mockMvc.perform(request)
+            .andExpect(
+                status().is4xxClientError()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        assertNotNull(content);
+    }
+
+    @Test
+    void shouldSuccessWhenExitingAParkingWithValidIdAndNotAlreadyExited() throws Exception {
+        UUID id = parkingRepository.save(buildParking(UUID.randomUUID())).getId();
+        RequestBuilder request = buildPostRequest("/api/v1/parking/" + id + "/exit");
+        MvcResult result = mockMvc.perform(request)
+            .andExpect(
+                status().isOk()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        assertNotNull(content);
+        assertTrue(content.contains("exitDate"));
+        assertTrue(content.contains("bill"));
+    }
+
+    @Test
+    void shouldFailWhenExitingAParkingWithInvalidId() throws Exception {
+        RequestBuilder request = buildPostRequest("/api/v1/parking/" + UUID.randomUUID() + "/exit");
+        MvcResult result = mockMvc.perform(request)
+            .andExpect(
+                status().is4xxClientError()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        assertNotNull(content);
+    }
+
+    @Test
+    void shouldFailWhenExitingAParkingWithValidIdButAlreadyExited() throws Exception {
+        UUID id = parkingRepository.save(buildParking(UUID.randomUUID()).withExitDate(LocalDateTime.now())).getId();
+        RequestBuilder request = buildPostRequest("/api/v1/parking/" + id + "/exit");
+        MvcResult result = mockMvc.perform(request)
+            .andExpect(
+                status().is4xxClientError()).andReturn();
+        String content = result.getResponse().getContentAsString();
+        assertNotNull(content);
+    }
 
 }
