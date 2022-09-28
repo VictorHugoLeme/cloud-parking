@@ -10,7 +10,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,7 +39,7 @@ public class ParkingController {
 
     @ApiOperation(value = "Create parking")
     @PostMapping("/")
-    public ResponseEntity<ParkingDto> create(@Valid @RequestBody ParkingCreationDto newParking) {
+    public ResponseEntity<ParkingDto> create(@RequestBody ParkingCreationDto newParking) {
         return new ResponseEntity<>(parkingService.create(newParking), HttpStatus.CREATED);
     }
 
