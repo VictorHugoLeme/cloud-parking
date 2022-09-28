@@ -1,3 +1,29 @@
 logging:
   level:
     org.springframework.web: DEBUG
+server:
+  error:
+    include-exception: false
+    include-message: always
+    include-stacktrace: never
+
+spring:
+  datasource:
+    driverClassName: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/postgres
+    username: postgres
+    password: password
+    hikari:
+      maximum-pool-size: 20
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: create
+    database: postgresql
+    properties:
+      hibernate:
+        globally_quoted_identifiers: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    sql:
+      init:
+        mode: always

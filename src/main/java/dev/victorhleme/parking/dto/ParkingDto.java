@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.With;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Data
 @With
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ParkingDto {
-    private String id;
+    private UUID id;
     private String license;
     private String state;
     private String model;
